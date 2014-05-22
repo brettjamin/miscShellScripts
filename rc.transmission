@@ -1,0 +1,85 @@
+#!/bin/bash
+
+    PID=""
+    TORRENT_DIR="/mnt/user/torrents"
+
+    function get_pid {
+       PID=`ps ax  |grep transmission-daemon |grep -v grep | cut -d " " -f 2`
+    }
+
+    function stop {
+       get_pid
+       if [ -z $PID ]; then
+          echo "Transmission is not running."
+          exit 1
+       else
+          echo -n "Stopping Transmission"
+          kill $PID
+          sleep 1
+          echo ".. Done."
+       fi
+    }
+
+
+    function start {
+       TORRENT_DIR_EXISTS=1;
+    	get_pid
+       if [ -z $PID ] 
+       then
+		while [ "$TORRENT_DIR_EXISTS" = 1 ] 
+		do
+			if [ -d "$TORRENT_DIR" ]
+			then
+				TORRENT_DIR_EXISTS=0;
+				echo "Starting Transmission";
+				/usr/local/bin/transmission-daemon
+				get_pid
+				echo "Done. PID=$PID"
+			else
+				echo "Delaying Start of Transmission 300 seconds";
+				sleep 300;
+			fi
+		done
+
+	fi
+    }
+
+    function restart {
+       echo  "Restarting Transmission.."
+       get_pid
+       if [ -z $PID ]; then
+          start
+       else
+          stop
+          start
+       fi
+    }
+
+
+    function status {
+       get_pid
+       if [ -z  $PID ]; then
+          echo "Transmission is not running."
+          exit 1
+       else
+          echo "Transmission is running, PID=$PID"
+       fi
+    }
+
+    case "$1" in
+       start)
+          start
+       ;;
+       stop)
+          stop
+       ;;
+       restart)
+          restart
+       ;;
+       status)
+          status
+       ;;
+       *)
+          echo "Usage: $0 {start|stop|restart|status}"
+    esac
+
